@@ -1,10 +1,8 @@
-from flask import Flask, render_template
+from flask import Flask
+from backend.routes import setup_routes
 
 app = Flask(__name__)
-
-@app.route("/")
-def home():
-    return render_template("index.html")
+setup_routes(app)
 
 if __name__ == "__main__":
     app.run(debug=True)
