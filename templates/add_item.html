@@ -1,18 +1,57 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Add Item</title>
-</head>
-<body>
-    <h1>Add a Clothing Item</h1>
-    <form method="POST">
-        <label>Name:</label>
-        <input type="text" name="name"><br><br>
+{% extends "base.html" %}
 
-        <label>Description:</label>
-        <input type="text" name="description"><br><br>
+{% block content %}
+<h2>Add New Clothing Item</h2>
 
-        <button type="submit">Create Item</button>
-    </form>
-</body>
-</html>
+<form id="addForm" enctype="multipart/form-data">
+    <input type="text" name="name" placeholder="Clothing name" required>
+    <textarea name="description" placeholder="Description"></textarea>
+    <input type="file" name="image_file" accept="image/*" required>
+    <button type="submit" id="submitBtn">Add Item & Mint NFT</button>
+</form>
+
+<script>
+document.getElementById("addForm").onsubmit = async (e) => {
+    e.preventDefault();
+    const submitBtn = document.getElementById("submitBtn");
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Minting NFT...";
+
+    try {
+        const walletPublicKey = "{{ wallet_public_key }}";
+        if (!walletPublicKey) {
+            alert("Please connect your wallet first!");
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Add Item & Mint NFT";
+            return;
+        }
+
+        const form = e.target;
+        const formData = new FormData(form);
+        formData.append("wallet_public_key", walletPublicKey);
+
+        // POST to the correct endpoint: /add
+        const resp = await fetch("/add", {
+            method: "POST",
+            body: formData
+        });
+
+        const result = await resp.json();
+
+        if (!result.success) {
+            throw new Error(result.error || "NFT minting failed");
+        }
+
+        alert(`NFT minted successfully! Explorer: ${result.explorer_url}`);
+        window.location.href = `/item/${result.item_id}`;
+
+    } catch (err) {
+        console.error(err);
+        alert("Error: " + err.message);
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Add Item & Mint NFT";
+    }
+};
+</script>
+{% endblock %}

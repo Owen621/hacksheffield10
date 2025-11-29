@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Wallet: {{ wallet_public_key }}</h2>
+
+<ul>
+{% for item in items %}
+  <li>
+    <b>{{ item.name }}</b><br>
+    {{ item.description }}<br>
+    <b>Mint Address:</b> {{ item.solana_mint }}
+  </li>
+{% endfor %}
+</ul>
+{% endblock %}
