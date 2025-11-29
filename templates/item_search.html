@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Task List</title>
+</head>
+<body>
+    <h1>Task List</h1>
+    <ul>
+        {% for item in items %}
+            <li>{{ item.solanaMint }} - {{ item.ownerPublicKey }} - {{ item.name }} - {{ item.description }}</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
+        

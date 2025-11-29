@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ReStyle</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        nav { background-color: #f2f2f2; padding: 10px; margin-bottom: 20px; }
+        nav a { margin-right: 15px; text-decoration: none; color: #333; font-weight: bold; }
+        nav a:hover { color: #0077cc; }
+        table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+        th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
+    </style>
+
+    <!-- Solana + SPL Token CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@solana/web3.js@1.98.4/lib/index.iife.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@solana/spl-token@0.4.14/dist/browser/index.js"></script>
+</head>     
+<body>
+    <nav>
+        <a href="/">Home</a>
+        <a href="/add">Add Clothing Item</a>
+        <a href="/my_items">My Clothing</a>
+        <a href="/all_items">All Items</a>
+
+        {% if wallet_public_key %}
+            <span>Wallet: {{ wallet_public_key }}</span>
+            <button id="disconnectWalletBtn">Disconnect Wallet</button>
+
+            <script type="module">
+            document.getElementById("disconnectWalletBtn")?.addEventListener("click", async () => {
+                // Clear Flask session
+                await fetch("/disconnect_wallet", { method: "POST" });
+                // Optional: disconnect Phantom connection
+                window.solana?.disconnect?.();
+                location.reload();
+            });
+            </script>
+        {% else %}
+            <button id="connectWalletBtn">Connect Wallet</button>
+        {% endif %}
+    </nav>
+
+    {% block content %}{% endblock %}
+
+    {% if not wallet_public_key %}
+    <script>
+    const btn = document.getElementById("connectWalletBtn");
+    if (btn) {
+        btn.onclick = async () => {
+            if (window.solana && window.solana.isPhantom) {
+                try {
+                    const resp = await window.solana.connect();
+                    const wallet = resp.publicKey.toString();
+
+                    // store wallet in Flask session
+                    await fetch("/set_wallet", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ wallet_public_key: wallet })
+                    });
+
+                    location.reload();
+                } catch (err) {
+                    console.error("Wallet connection failed:", err);
+                    alert("Failed to connect wallet.");
+                }
+            } else {
+                alert("Please install Phantom wallet!");
+            }
+        };
+    }
+    </script>
+    {% endif %}
+</body>
+</html>
