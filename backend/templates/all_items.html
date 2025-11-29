@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>All Minted Clothing Items</h2>
+
+<table>
+    <tr>
+        <th>Name</th>
+        <th>Description</th>
+        <th>Mint Address</th>
+        <th>Owner Wallet</th>
+    </tr>
+    {% for item in items %}
+    <tr>
+        <td>{{ item.name }}</td>
+        <td>{{ item.description }}</td>
+        <td>{{ item.solana_mint }}</td>
+        <td>{{ item.owner_wallet_public_key }}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% endblock %}

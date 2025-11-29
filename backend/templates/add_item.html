@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Add New Clothing Item</h2>
+
+{% if wallet_public_key %}
+<form id="addForm">
+    <input type="text" name="name" placeholder="Clothing name" required>
+    <textarea name="description" placeholder="Description"></textarea>
+    <button type="submit">Add Item & Mint NFT</button>
+</form>
+
+<script>
+document.getElementById("addForm").onsubmit = async (e) => {
+    e.preventDefault();
+
+    const wallet = "{{ wallet_public_key }}";
+    if (!wallet) {
+        alert("Connect your wallet first!");
+        return;
+    }
+
+    const name = e.target.name.value.trim();
+    const description = e.target.description.value.trim();
+
+    const resp = await fetch("/add", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, description })
+    });
+
+    const result = await resp.json();
+
+    if (result.success) {
+        alert("NFT minted! Mint address: " + result.solana_mint);
+        window.location.href = "/item/" + result.item_id;
+    } else {
+        alert("Error: " + result.error);
+    }
+};
+</script>
+
+{% else %}
+<p>Please <a href="/connect_wallet">connect your wallet</a> first.</p>
+{% endif %}
+{% endblock %}

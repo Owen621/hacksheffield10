@@ -1,8 +1,13 @@
 from flask import Flask
 from backend.routes import setup_routes
-
-app = Flask(__name__)
-app.secret_key = "dev_secret_key"  # needed for session
+from dotenv import load_dotenv
+load_dotenv()  
+app = Flask(
+    __name__,
+    template_folder="backend/templates",
+    static_folder="backend/static"
+)
+app.secret_key = "dev_secret_key"
 
 setup_routes(app)
 
