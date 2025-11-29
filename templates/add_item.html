@@ -1,13 +1,11 @@
 {% extends "base.html" %}
-
 {% block content %}
-<h2>Add New Clothing Item</h2>
+<h2>Add New Clothing Item (No Image)</h2>
 
-<form id="addForm" enctype="multipart/form-data">
+<form id="addForm">
     <input type="text" name="name" placeholder="Clothing name" required>
     <textarea name="description" placeholder="Description"></textarea>
-    <input type="file" name="image_file" accept="image/*" required>
-    <button type="submit" id="submitBtn">Add Item & Mint NFT</button>
+    <button type="submit" id="submitBtn">Mint NFT</button>
 </form>
 
 <script>
@@ -22,36 +20,32 @@ document.getElementById("addForm").onsubmit = async (e) => {
         if (!walletPublicKey) {
             alert("Please connect your wallet first!");
             submitBtn.disabled = false;
-            submitBtn.textContent = "Add Item & Mint NFT";
+            submitBtn.textContent = "Mint NFT";
             return;
         }
 
-        const form = e.target;
-        const formData = new FormData(form);
-        formData.append("wallet_public_key", walletPublicKey);
+        const name = document.querySelector("input[name='name']").value;
+        const description = document.querySelector("textarea[name='description']").value;
 
-        // POST to the correct endpoint: /add
         const resp = await fetch("/add", {
             method: "POST",
-            body: formData
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name, description })
         });
 
         const result = await resp.json();
+        if (!result.success) throw new Error(result.error);
 
-        if (!result.success) {
-            throw new Error(result.error || "NFT minting failed");
-        }
-
-        alert(`NFT minted successfully! Explorer: ${result.explorer_url}`);
+        alert(`NFT minted! Explorer: ${result.explorer_url}`);
         window.location.href = `/item/${result.item_id}`;
-
     } catch (err) {
         console.error(err);
         alert("Error: " + err.message);
     } finally {
         submitBtn.disabled = false;
-        submitBtn.textContent = "Add Item & Mint NFT";
+        submitBtn.textContent = "Mint NFT";
     }
 };
 </script>
 {% endblock %}
+
