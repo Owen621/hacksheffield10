@@ -1,18 +1,341 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Add Item</title>
-</head>
-<body>
-    <h1>Add a Clothing Item</h1>
-    <form method="POST">
-        <label>Name:</label>
-        <input type="text" name="name"><br><br>
+{% extends "base.html" %}
+{% block title %}Add Item{% endblock %}
+{% block content %}
+<style>
+.add-item-container {
+    max-width: 700px;
+    margin: 0 auto;
+}
 
-        <label>Description:</label>
-        <input type="text" name="description"><br><br>
+.page-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
 
-        <button type="submit">Create Item</button>
-    </form>
-</body>
-</html>
+.page-header h1 {
+    font-size: 2.5rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 10px;
+    font-weight: 700;
+}
+
+.page-header p {
+    color: #6c757d;
+    font-size: 1.1rem;
+}
+
+.form-container {
+    background: white;
+    padding: 40px;
+    border-radius: 16px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(102, 126, 234, 0.1);
+}
+
+.form-group {
+    margin-bottom: 30px;
+}
+
+.form-group label {
+    display: block;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 10px;
+    font-size: 0.95rem;
+    letter-spacing: 0.3px;
+}
+
+.form-group input[type="text"],
+.form-group textarea {
+    width: 100%;
+    padding: 14px 18px;
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-family: inherit;
+    transition: all 0.3s ease;
+    background: #f8f9fa;
+}
+
+.form-group input[type="text"]:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #667eea;
+    background: white;
+    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+    transform: translateY(-1px);
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 120px;
+    line-height: 1.6;
+}
+
+.image-upload-area {
+    border: 3px dashed #dee2e6;
+    border-radius: 12px;
+    padding: 40px;
+    text-align: center;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.image-upload-area:hover {
+    border-color: #667eea;
+    background: linear-gradient(135deg, #f0f2ff 0%, #e8ebff 100%);
+    transform: translateY(-2px);
+}
+
+.image-upload-area.dragover {
+    border-color: #667eea;
+    background: linear-gradient(135deg, #e8ebff 0%, #dce0ff 100%);
+    box-shadow: inset 0 0 20px rgba(102, 126, 234, 0.2);
+}
+
+.upload-icon {
+    font-size: 3rem;
+    margin-bottom: 15px;
+    opacity: 0.5;
+}
+
+.image-upload-area p {
+    color: #6c757d;
+    margin: 10px 0;
+    font-weight: 500;
+}
+
+.image-upload-area small {
+    color: #adb5bd;
+    display: block;
+    margin-top: 8px;
+}
+
+.image-upload-area input[type="file"] {
+    display: none;
+}
+
+.image-preview {
+    margin-top: 20px;
+    display: none;
+}
+
+.image-preview.active {
+    display: block;
+}
+
+.preview-container {
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.preview-container img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.remove-image {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: rgba(245, 87, 108, 0.95);
+    color: white;
+    border: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 20px;
+    line-height: 1;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.remove-image:hover {
+    background: #f5576c;
+    transform: scale(1.1) rotate(90deg);
+}
+
+.submit-button {
+    width: 100%;
+    padding: 16px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    margin-top: 10px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.submit-button:hover {
+    box-shadow: 0 8px 30px rgba(102, 126, 234, 0.6);
+    transform: translateY(-3px);
+}
+
+.submit-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.form-container {
+    animation: slideInUp 0.5s ease;
+}
+
+@media (max-width: 768px) {
+    .form-container {
+        padding: 25px;
+    }
+    
+    .page-header h1 {
+        font-size: 2rem;
+    }
+    
+    .image-upload-area {
+        padding: 30px 20px;
+    }
+}
+</style>
+
+<div class="add-item-container">
+    <div class="page-header">
+        <h1>Add a Clothing Item</h1>
+        <p>List your fashion piece on the marketplace</p>
+    </div>
+    
+    <div class="form-container">
+        <form method="POST" enctype="multipart/form-data" id="addItemForm">
+            <div class="form-group">
+                <label for="name">Item Name</label>
+                <input type="text" id="name" name="name" placeholder="e.g., Vintage Leather Jacket" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="description">Description</label>
+                <textarea id="description" name="description" placeholder="Describe your item in detail... condition, size, style, etc." required></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="image">Item Image</label>
+                <div class="image-upload-area" id="uploadArea">
+                    <div class="upload-icon">📸</div>
+                    <p>Click to upload or drag and drop</p>
+                    <small>PNG, JPG, WEBP up to 10MB</small>
+                    <input type="file" id="image" name="image" accept="image/*">
+                </div>
+                
+                <div class="image-preview" id="imagePreview">
+                    <div class="preview-container">
+                        <img id="previewImg" src="" alt="Preview">
+                        <button type="button" class="remove-image" id="removeImage">×</button>
+                    </div>
+                </div>
+            </div>
+            
+            <button type="submit" class="submit-button">Create Item</button>
+        </form>
+    </div>
+</div>
+
+<script>
+const uploadArea = document.getElementById('uploadArea');
+const fileInput = document.getElementById('image');
+const imagePreview = document.getElementById('imagePreview');
+const previewImg = document.getElementById('previewImg');
+const removeImageBtn = document.getElementById('removeImage');
+
+// Click to upload
+uploadArea.addEventListener('click', () => {
+    fileInput.click();
+});
+
+// Prevent default drag behaviors
+['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    uploadArea.addEventListener(eventName, preventDefaults, false);
+    document.body.addEventListener(eventName, preventDefaults, false);
+});
+
+function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+}
+
+// Highlight drop area
+['dragenter', 'dragover'].forEach(eventName => {
+    uploadArea.addEventListener(eventName, () => {
+        uploadArea.classList.add('dragover');
+    }, false);
+});
+
+['dragleave', 'drop'].forEach(eventName => {
+    uploadArea.addEventListener(eventName, () => {
+        uploadArea.classList.remove('dragover');
+    }, false);
+});
+
+// Handle dropped files
+uploadArea.addEventListener('drop', (e) => {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+    
+    if (files.length > 0) {
+        fileInput.files = files;
+        handleFiles(files);
+    }
+}, false);
+
+// Handle file selection
+fileInput.addEventListener('change', (e) => {
+    handleFiles(e.target.files);
+});
+
+function handleFiles(files) {
+    if (files.length > 0) {
+        const file = files[0];
+        
+        if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            
+            reader.onload = (e) => {
+                previewImg.src = e.target.result;
+                imagePreview.classList.add('active');
+            };
+            
+            reader.readAsDataURL(file);
+        }
+    }
+}
+
+// Remove image
+removeImageBtn.addEventListener('click', () => {
+    fileInput.value = '';
+    imagePreview.classList.remove('active');
+    previewImg.src = '';
+});
+</script>
+{% endblock %}

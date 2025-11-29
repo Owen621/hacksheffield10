@@ -1,15 +1,331 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Task List</title>
-</head>
-<body>
-    <h1>Task List</h1>
-    <ul>
-        {% for item in items %}
-            <li>{{ item.solanaMint }} - {{ item.ownerPublicKey }} - {{ item.name }} - {{ item.description }}</li>
-        {% endfor %}
-    </ul>
-</body>
-</html>
-        
+{% extends "base.html" %}
+{% block title %}All Items{% endblock %}
+{% block content %}
+<style>
+.all-items-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.page-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.page-header h1 {
+    font-size: 2.5rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 10px;
+    font-weight: 700;
+}
+
+.page-header p {
+    color: #6c757d;
+    font-size: 1.1rem;
+}
+
+.items-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 30px;
+    margin-bottom: 40px;
+}
+
+.item-card {
+    background: white;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border: 1px solid rgba(102, 126, 234, 0.1);
+    position: relative;
+}
+
+.item-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 16px 40px rgba(102, 126, 234, 0.25);
+}
+
+.item-image {
+    width: 100%;
+    height: 250px;
+    object-fit: cover;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.item-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s ease;
+}
+
+.item-card:hover .item-image img {
+    transform: scale(1.05);
+}
+
+.no-image {
+    font-size: 4rem;
+    opacity: 0.3;
+}
+
+.item-details {
+    padding: 20px;
+}
+
+.item-name {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #2c3e50;
+    margin-bottom: 10px;
+    line-height: 1.3;
+}
+
+.item-description {
+    color: #6c757d;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin-bottom: 15px;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.item-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 15px;
+    border-top: 1px solid #e9ecef;
+}
+
+.item-owner {
+    font-size: 0.85rem;
+    color: #adb5bd;
+    font-family: 'Courier New', monospace;
+}
+
+.view-button {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 8px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.view-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin-top: 40px;
+    flex-wrap: wrap;
+}
+
+.pagination-info {
+    font-weight: 600;
+    color: #495057;
+    background: white;
+    padding: 10px 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.pagination button {
+    padding: 10px 20px;
+    min-width: 100px;
+}
+
+.pagination button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.pagination button:disabled:hover {
+    transform: none;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.filters {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+    gap: 15px;
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.filter-group label {
+    font-weight: 600;
+    color: #495057;
+    font-size: 0.95rem;
+}
+
+.filter-group select {
+    padding: 8px 16px;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    background: #f8f9fa;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.filter-group select:focus {
+    outline: none;
+    border-color: #667eea;
+    background: white;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+.empty-state-icon {
+    font-size: 5rem;
+    margin-bottom: 20px;
+    opacity: 0.3;
+}
+
+.empty-state h2 {
+    color: #495057;
+    margin-bottom: 10px;
+}
+
+.empty-state p {
+    color: #adb5bd;
+    font-size: 1.1rem;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.item-card {
+    animation: fadeInUp 0.5s ease forwards;
+}
+
+.item-card:nth-child(1) { animation-delay: 0.05s; }
+.item-card:nth-child(2) { animation-delay: 0.1s; }
+.item-card:nth-child(3) { animation-delay: 0.15s; }
+.item-card:nth-child(4) { animation-delay: 0.2s; }
+.item-card:nth-child(5) { animation-delay: 0.25s; }
+.item-card:nth-child(6) { animation-delay: 0.3s; }
+
+@media (max-width: 768px) {
+    .items-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
+    .page-header h1 {
+        font-size: 2rem;
+    }
+    
+    .filters {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .filter-group {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .filter-group select {
+        flex: 1;
+    }
+    
+    .pagination {
+        gap: 10px;
+    }
+    
+    .pagination button {
+        min-width: 80px;
+        padding: 10px 15px;
+        font-size: 0.9rem;
+    }
+}
+</style>
+
+<div class="all-items-container">
+    <div class="page-header">
+        <h1>Browse All Items</h1>
+        <p>Discover unique fashion pieces from our community</p>
+    </div>
+    
+    <div class="filters">
+        <div class="filter-group">
+            <label for="itemsPerPage">Items per page:</label>
+            <select id="itemsPerPage" onchange="changeLimit(this.value)">
+                <option value="6" {% if limit == 6 %}selected{% endif %}>6</option>
+                <option value="12" {% if limit == 12 %}selected{% endif %}>12</option>
+                <option value="24" {% if limit == 24 %}selected{% endif %}>24</option>
+                <option value="48" {% if limit == 48 %}selected{% endif %}>48</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <span style="color: #adb5bd; font-size: 0.95rem;">Total items: <strong style="color: #495057;">{{ total_items }}</strong></span>
+        </div>
+    </div>
+    
+    
+</div>
+
+<script>
+function changePage(newPage) {
+    const urlParams = new URLSearchParams(window.location.search);
+    urlParams.set('page', newPage);
+    window.location.search = urlParams.toString();
+}
+
+function changeLimit(newLimit) {
+    const urlParams = new URLSearchParams(window.location.search);
+    urlParams.set('limit', newLimit);
+    urlParams.set('page', 1); // Reset to first page when changing limit
+    window.location.search = urlParams.toString();
+}
+</script>
+{% endblock %}

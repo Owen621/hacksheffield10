@@ -1,11 +1,9 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>ReStyle</title>
-</head>
-<body>
+{% extends "base.html" %}  
+
+{% block title %}ReStyle{% endblock %}
+
+{% block content %}
     <h1>ReStyle Prototype</h1>
     <p>Track clothing as it moves: buy → trade → donate → repair.</p>
     <a href="/add">Add New Clothing Item</a>
-</body>
-</html>
+{% endblock %}
