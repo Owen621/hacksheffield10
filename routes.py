@@ -307,3 +307,35 @@ def setup_routes(app: Flask):
             "message": f"Journey stamp '{event}' added!",
             "loyalty_points": user.loyalty_points
         })
+    
+    @app.route("/update_item", methods=["POST"])
+    def update_item():
+        item_mint = request.form.get('item_mint')
+        description = request.form.get('description')
+        price = request.form.get('price', type=float)
+
+        item = Item.query.filter_by(solanaMint=item_mint).first()
+        if not item:
+            return jsonify({"error": "Item not found"}), 404
+        
+        item.description = description
+        item.price = price
+
+        db.session.commit()
+        return jsonify({"status": "success", "message": "Item Modified"})
+
+    @app.route("/purchase_item", methods=["POST"])
+    def purchase_item():
+        data = request.json
+        wallet = data.get('wallet')
+        item_mint = data.get('item_mint')
+
+        item = Item.query.filter_by(solanaMint=item_mint).first()
+        if not item:
+            return jsonify({"error": "Item not found"}), 404
+        
+        item.ownerPublicKey = wallet
+        item.price = 0
+
+        db.session.commit()
+        return jsonify({"status": "success", "message": "Item purchased"})

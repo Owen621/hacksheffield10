@@ -61,7 +61,6 @@
     <div class="item-image">
       {% if item.image_filename and item.image_data %}
         <img decoding="async" src="data:image/{{ item.image_MIME }};base64,{{ item.image_data_base64 }}" alt="{{ item.image_filename }}">
-        <div style="height:200px;display:flex;align-items:center;justify-content:center;color:#ccc;">🖼️</div>
       {% endif %}
     </div>
     <div class="item-details">

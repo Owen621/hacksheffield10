@@ -169,20 +169,132 @@ p.description { text-align: center; color: #555; margin-bottom: 10px; }
     color: #22543d;
     border: 1px solid #9ae6b4;
 }
+
+/* Edit Mode Styles */
+.edit-button {
+    background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+    color: white;
+    padding: 10px 16px;
+    font-size: 1rem;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    margin-top: 10px;
+}
+
+.edit-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(237, 137, 54, 0.4);
+}
+
+.edit-form {
+    background: #fffaf0;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    border-left: 4px solid #ed8936;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+    color: #333;
+}
+
+.form-group input,
+.form-group textarea {
+    width: 100%;
+    padding: 10px;
+    font-size: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-family: inherit;
+    box-sizing: border-box;
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.image-preview {
+    max-width: 200px;
+    max-height: 200px;
+    margin-top: 10px;
+    border-radius: 8px;
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.save-button {
+    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+    color: white;
+    padding: 12px 24px;
+    font-size: 1rem;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.save-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(72, 187, 120, 0.4);
+}
+
+.cancel-button {
+    background: #cbd5e0;
+    color: #2d3748;
+    padding: 12px 24px;
+    font-size: 1rem;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.cancel-button:hover {
+    background: #a0aec0;
+}
+
+.owner-controls {
+    text-align: center;
+    margin-bottom: 20px;
+}
 </style>
 
 <div class="item-container">
     <div class="item-image">
-        <img decoding="async" src="data:image/{{ item.image_MIME }};base64,{{ item.image_data_base64 }}" alt="{{ item.image_filename }}">
+        <img id="itemImage" decoding="async" src="data:image/{{ item.image_MIME }};base64,{{ item.image_data_base64 }}" alt="{{ item.image_filename }}">
     </div>
-    <h2>{{ item.name }} ({{ item.brand }})</h2>
-    <p class="description">{{ item.description }}</p>
+    <h2 id="itemName">{{ item.name }} ({{ item.brand }})</h2>
+    <p class="description" id="itemDescription">{{ item.description }}</p>
     
     <div class="item-details">
         {% if item.price != 0 %}
-        <p class="price-display">Price: {{ item.price }} SOL</p>
+        <p class="price-display" id="priceDisplay">Price: £<span id="priceValue">{{ item.price }}</span></p>
         {% else %}
-        <p class="price-display">Not for Sale</p>
+        <p class="price-display" id="priceDisplay">Not for Sale</p>
         {% endif %}
         {% if item.owner %}
         <p><strong>Owner:</strong> {{ item.owner }}</p>
@@ -193,6 +305,29 @@ p.description { text-align: center; color: #555; margin-bottom: 10px; }
 
     <!-- Owner Section -->
     {% if is_owner %}
+        <div class="owner-controls">
+            <button class="edit-button" onclick="toggleEditMode()">✏️ Edit Item</button>
+        </div>
+
+        <div id="editFormContainer" class="edit-form hidden">
+            <h3>Edit Item Details</h3>
+
+            <div class="form-group">
+                <label for="editDescription">Description:</label>
+                <textarea id="editDescription" placeholder="Enter item description">{{ item.description }}</textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="editPrice">Price (£):</label>
+                <input type="number" id="editPrice" value="{{ item.price }}" placeholder="0" min="0" step="0.1">
+            </div>
+
+            <div class="form-actions">
+                <button class="save-button" onclick="saveChanges()">💾 Save Changes</button>
+                <button class="cancel-button" onclick="toggleEditMode()">Cancel</button>
+            </div>
+        </div>
+
         <div class="owner-section">
             <h3>Owner Dashboard</h3>
             {% if wallet_public_key %}
@@ -207,10 +342,10 @@ p.description { text-align: center; color: #555; margin-bottom: 10px; }
                     <button onclick="addJourney()">Add Journey Stamp</button>
                 </div>
             {% else %}
-                <p style="text-align:center;">Please to add journey stamps.</p>
+                <p style="text-align:center;">Please connect your wallet to add journey stamps.</p>
             {% endif %}
         </div>
-        {% else %}
+    {% else %}
         <!-- Buyer Section -->
         <div class="buy-section">
             <h3>Interested in this item?</h3>
@@ -255,6 +390,63 @@ function showAlert(message, isError = false) {
     setTimeout(() => alertDiv.remove(), 5000);
 }
 
+function toggleEditMode() {
+    const editForm = document.getElementById('editFormContainer');
+    editForm.classList.toggle('hidden');
+}
+
+document.getElementById('editImage')?.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const preview = document.getElementById('newImagePreview');
+            preview.src = event.target.result;
+            preview.classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+    }
+});
+
+async function saveChanges() {
+    const description = document.getElementById('editDescription').value.trim();
+    const price = parseFloat(document.getElementById('editPrice').value) || 0;
+    const itemMint = "{{ item.solanaMint }}";
+
+    const formData = new FormData();
+    formData.append('item_mint', itemMint);
+    formData.append('description', description);
+    formData.append('price', price);
+
+    try {
+        const resp = await fetch('/update_item', {
+            method: 'POST',
+            body: formData
+        });
+
+        const result = await resp.json();
+
+        if (result.error) {
+            showAlert(result.error, true);
+        } else {
+            showAlert(result.message, false);
+            
+            // Update UI with new values
+            document.getElementById('itemName').innerText = `${name} ({{ item.brand }})`;
+            document.getElementById('itemDescription').innerText = description;
+            
+            if (price !== 0) {
+                document.getElementById('priceDisplay').innerHTML = `Price: <span id="priceValue">${price}</span> SOL`;
+            } else {
+                document.getElementById('priceDisplay').innerText = 'Not for Sale';
+            }
+            toggleEditMode();
+        }
+    } catch (err) {
+        showAlert('An error occurred while saving: ' + err.message, true);
+    }
+}
+
 async function addJourney() {
     const event = document.getElementById('journeyEvent').value;
     const wallet = "{{ wallet_public_key }}";
@@ -272,10 +464,8 @@ async function addJourney() {
     } else {
         showAlert(result.message, false);
 
-        // Update user's points for this item
         document.getElementById('points').innerText = result.loyalty_points;
 
-        // Append the new journey stamp at the top
         const li = document.createElement('li');
         const now = new Date();
         li.innerText = `${event.replace('_', ' ').toUpperCase()} - ${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()} ${now.getHours()}:${now.getMinutes()} (${wallet})`;
@@ -307,7 +497,6 @@ async function purchaseItem() {
             buyButton.innerText = "🛒 Buy Now";
         } else {
             showAlert(result.message, false);
-            // Optionally reload the page or redirect after successful purchase
             setTimeout(() => {
                 window.location.reload();
             }, 2000);
