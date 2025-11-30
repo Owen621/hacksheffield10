@@ -45,7 +45,6 @@ def setup_routes(app: Flask):
         if wallet_pk:
             g.total_points = JourneyStamp.query.filter_by(user_wallet=wallet_pk).count()
 
-
     
     # ---------------------------------------------------------
     # Home
@@ -251,8 +250,6 @@ def setup_routes(app: Flask):
         )
 
 
-
-
     @app.route("/add_stamp", methods=["POST"])
     def add_stamp():
         data = request.json
@@ -291,11 +288,12 @@ def setup_routes(app: Flask):
         # Transfer 1 loyalty token on-chain
         try:
             result = subprocess.run(
-                ["node", "backend/transfer_loyalty_token.js", wallet],
+                ["node", "static/js/transfer_loyalty_token.js", wallet],
                 capture_output=True,
                 text=True,
                 check=True
             )
+
             transfer_output = result.stdout
             transfer_data = json.loads(transfer_output)
             if not transfer_data.get("success"):
@@ -339,3 +337,21 @@ def setup_routes(app: Flask):
 
         db.session.commit()
         return jsonify({"status": "success", "message": "Item purchased"})
+    
+
+        # ---------------------------------------------------------
+    # Leaderboard
+    # ---------------------------------------------------------
+    @app.route("/leaderboard")
+    def leaderboard():
+        wallet_pk = session.get("wallet_public_key")
+
+        # Query top users by loyalty points, descending order
+        from sqlalchemy import desc
+        top_users = User.query.order_by(desc(User.loyalty_points)).limit(20).all()  # top 20
+
+        return render_template(
+            "leaderboard.html",
+            users=top_users,
+            wallet_public_key=wallet_pk
+        )
