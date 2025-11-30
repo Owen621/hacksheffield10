@@ -68,7 +68,9 @@
     <div class="item-details">
       <div class="item-name">{{ item.name }}</div>
       <div class="item-description">{{ item.description }}</div>
+      <div class="item-brand">{{ item.brand }}</div>
       <div class="item-owner">{{ item.ownerPublicKey[:6] }}...{{ item.ownerPublicKey[-6:] }}</div>
+      <span class="item-points">Points: {{ item.total_points or 0 }}</span>
       <a href="/item/{{ item.solanaMint }}" class="view-button">View</a>
     </div>
   </div>

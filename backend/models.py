@@ -9,5 +9,23 @@ class Item(db.Model):
     ownerPublicKey = db.Column(db.String(44))
     name = db.Column(db.String(30))
     description = db.Column(db.String(100))
-    image_filename = db.Column(db.String(255))  # store uploaded image filename
+    image_filename = db.Column(db.String(255))
+    brand = db.Column(db.String(50))  # store brand name directly
 
+
+
+class User(db.Model):
+    __tablename__ = "users"
+
+    wallet = db.Column(db.String(44), primary_key=True)  # Phantom public key
+    loyalty_points = db.Column(db.Integer, default=0)
+
+
+class JourneyStamp(db.Model):
+    __tablename__ = "journey_stamps"
+
+    id = db.Column(db.Integer, primary_key=True)
+    item_mint = db.Column(db.String(44), db.ForeignKey("items.solanaMint"))
+    user_wallet = db.Column(db.String(44), db.ForeignKey("users.wallet"))
+    event = db.Column(db.String(50))  
+    timestamp = db.Column(db.DateTime, default=db.func.now())

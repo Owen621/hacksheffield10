@@ -217,6 +217,17 @@ textarea {
             <div class="form-group">
                 <textarea name="description" placeholder="Description"></textarea>
             </div>
+
+            <!-- Brand dropdown -->
+            <div class="form-group">
+                <select name="brand" required>
+                    <option value="" disabled selected>Select Brand</option>
+                    {% for brand in brands %}
+                        <option value="{{ brand }}">{{ brand }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
             <div class="form-group">
                 <div class="image-upload-area" id="uploadArea">
                     <div class="upload-icon">📸</div>
@@ -242,10 +253,8 @@ textarea {
     const previewImg = document.getElementById('previewImg');
     const removeImageBtn = document.getElementById('removeImage');
 
-    // Click to upload
     uploadArea.addEventListener('click', () => fileInput.click());
 
-    // Drag-and-drop events
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
         uploadArea.addEventListener(eventName, e => { e.preventDefault(); e.stopPropagation(); }, false);
     });
@@ -258,13 +267,11 @@ textarea {
         uploadArea.addEventListener(eventName, () => uploadArea.classList.remove('dragover'), false);
     });
 
-    // Handle dropped files
     uploadArea.addEventListener('drop', (e) => {
         const files = e.dataTransfer.files;
         if (files.length) { fileInput.files = files; handleFiles(files); }
     });
 
-    // Handle file selection
     fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
 
     function handleFiles(files) {
@@ -284,7 +291,6 @@ textarea {
         imagePreview.classList.remove('active');
     });
 
-    // Form submission
     document.getElementById("addForm").onsubmit = async (e) => {
         e.preventDefault();
         const wallet = "{{ wallet_public_key }}";
