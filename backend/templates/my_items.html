@@ -1,15 +1,80 @@
 {% extends "base.html" %}
-
+{% block title %}My Items{% endblock %}
 {% block content %}
-<h2>Wallet: {{ wallet_public_key }}</h2>
+<style>
+.items-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+}
+.item-card {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+    display: flex;
+    flex-direction: column;
+}
+.item-image img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+}
+.item-details {
+    padding: 15px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+.item-name {
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+.item-description {
+    font-size: 0.9rem;
+    color: #555;
+    margin-bottom: 10px;
+}
+.item-owner {
+    font-family: monospace;
+    font-size: 0.8rem;
+    color: #888;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.view-button {
+    margin-top: 10px;
+    text-align: center;
+    background: #667eea;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 8px;
+    text-decoration: none;
+}
+</style>
 
-<ul>
+<div class="items-grid">
 {% for item in items %}
-  <li>
-    <b>{{ item.name }}</b><br>
-    {{ item.description }}<br>
-    <b>Mint Address:</b> {{ item.solana_mint }}
-  </li>
+  <div class="item-card">
+    <div class="item-image">
+      {% if item.image_filename %}
+        <img src="{{ url_for('static', filename='uploads/' ~ item.image_filename) }}" alt="{{ item.name }}">
+      {% else %}
+        <div style="height:200px;display:flex;align-items:center;justify-content:center;color:#ccc;">🖼️</div>
+      {% endif %}
+    </div>
+    <div class="item-details">
+      <div class="item-name">{{ item.name }}</div>
+      <div class="item-description">{{ item.description }}</div>
+      <div class="item-owner">{{ item.ownerPublicKey[:6] }}...{{ item.ownerPublicKey[-6:] }}</div>
+      <a href="/item/{{ item.solanaMint }}" class="view-button">View</a>
+    </div>
+  </div>
+{% else %}
+  <div style="grid-column:1/-1;text-align:center;color:#888;padding:40px;">No items found.</div>
 {% endfor %}
-</ul>
+</div>
+
 {% endblock %}

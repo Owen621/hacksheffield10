@@ -7,13 +7,14 @@
     <h2>{{ item.name }}</h2>
     <p>{{ item.description }}</p>
 
-    {% if item.solana_mint %}
-        <p>Mint address: 
-        <a href="https://explorer.solana.com/address/{{ item.solana_mint }}?cluster=devnet" target="_blank">
-            {{ item.solana_mint }}
+    {% if item.solanaMint %}
+        <p>Mint address:
+        <a href="https://explorer.solana.com/address/{{ item.solanaMint }}?cluster=devnet" target="_blank">
+            {{ item.solanaMint }}
         </a>
         </p>
     {% else %}
         <p>NFT not minted yet.</p>
     {% endif %}
 </body>
+</html>
