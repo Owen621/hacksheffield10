@@ -1,0 +1,14 @@
+{
+  "name": "hacksheffield10",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node backend/mint_nft.js"
+  },
+  "dependencies": {
+    "@solana/web3.js": "^2.0.0",
+    "@solana/spl-token": "^0.3.6",
+    "@metaplex-foundation/js": "^1.6.1",
+    "dotenv": "^16.3.1"
+  }
+}
