@@ -288,11 +288,12 @@ def setup_routes(app: Flask):
         # Transfer 1 loyalty token on-chain
         try:
             result = subprocess.run(
-                ["node", "backend/transfer_loyalty_token.js", wallet],
+                ["node", "static/js/transfer_loyalty_token.js", wallet],
                 capture_output=True,
                 text=True,
                 check=True
             )
+
             transfer_output = result.stdout
             transfer_data = json.loads(transfer_output)
             if not transfer_data.get("success"):
