@@ -32,11 +32,40 @@ h2 { text-align: center; font-size: 2rem; margin-bottom: 10px; }
 p.description { text-align: center; color: #555; margin-bottom: 10px; }
 .loyalty-points { text-align: center; font-weight: 600; margin-bottom: 20px; }
 
+.item-details {
+    text-align: center;
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 10px;
+}
+
+.item-details p {
+    margin: 8px 0;
+    font-size: 1.1rem;
+}
+
+.price-display {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #667eea;
+    margin: 10px 0;
+}
+
+.owner-section {
+    margin-bottom: 30px;
+    padding: 15px;
+    background: #f0f4ff;
+    border-left: 4px solid #667eea;
+    border-radius: 8px;
+}
+
 .journey-actions {
     display: flex;
     justify-content: center;
     gap: 10px;
     margin-bottom: 30px;
+    flex-wrap: wrap;
 }
 
 .journey-actions select,
@@ -58,6 +87,38 @@ p.description { text-align: center; color: #555; margin-bottom: 10px; }
 .journey-actions button:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.buy-section {
+    text-align: center;
+    padding: 20px;
+    background: #f0fff4;
+    border-left: 4px solid #48bb78;
+    border-radius: 8px;
+    margin-bottom: 30px;
+}
+
+.buy-button {
+    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+    color: white;
+    padding: 12px 24px;
+    font-size: 1.1rem;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.buy-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(72, 187, 120, 0.4);
+}
+
+.buy-button:disabled {
+    background: #cbd5e0;
+    cursor: not-allowed;
+    transform: none;
 }
 
 .journey-history {
@@ -86,6 +147,28 @@ p.description { text-align: center; color: #555; margin-bottom: 10px; }
     margin-bottom: 6px;
     font-weight: 500;
 }
+
+.hidden {
+    display: none;
+}
+
+.alert {
+    padding: 12px 16px;
+    margin-bottom: 15px;
+    border-radius: 8px;
+}
+
+.alert-error {
+    background: #fed7d7;
+    color: #c53030;
+    border: 1px solid #fc8181;
+}
+
+.alert-success {
+    background: #c6f6d5;
+    color: #22543d;
+    border: 1px solid #9ae6b4;
+}
 </style>
 
 <div class="item-container">
@@ -94,19 +177,54 @@ p.description { text-align: center; color: #555; margin-bottom: 10px; }
     </div>
     <h2>{{ item.name }} ({{ item.brand }})</h2>
     <p class="description">{{ item.description }}</p>
-    {% if wallet_public_key %}
-    <p class="loyalty-points">Your Loyalty Points for this item: <span id="points">{{ item_points }}</span></p>
-
-    <div class="journey-actions">
-        <select id="journeyEvent">
-            {% for event in journey_events %}
-                <option value="{{ event }}">{{ event.replace('_', ' ').title() }}</option>
-            {% endfor %}
-        </select>
-        <button onclick="addJourney()">Add Journey Stamp</button>
+    
+    <div class="item-details">
+        {% if item.price != 0 %}
+        <p class="price-display">Price: {{ item.price }} SOL</p>
+        {% else %}
+        <p class="price-display">Not for Sale</p>
+        {% endif %}
+        {% if item.owner %}
+        <p><strong>Owner:</strong> {{ item.owner }}</p>
+        {% endif %}
     </div>
-    {% else %}
-    <p style="text-align:center;">Please <a href="/connect_wallet">connect your wallet</a> to add journey stamps.</p>
+
+    <div id="alertContainer"></div>
+
+    <!-- Owner Section -->
+    {% if is_owner %}
+        <div class="owner-section">
+            <h3>Owner Dashboard</h3>
+            {% if wallet_public_key %}
+                <p class="loyalty-points">Your Loyalty Points for this item: <span id="points">{{ item_points }}</span></p>
+
+                <div class="journey-actions">
+                    <select id="journeyEvent">
+                        {% for event in journey_events %}
+                            <option value="{{ event }}">{{ event.replace('_', ' ').title() }}</option>
+                        {% endfor %}
+                    </select>
+                    <button onclick="addJourney()">Add Journey Stamp</button>
+                </div>
+            {% else %}
+                <p style="text-align:center;">Please to add journey stamps.</p>
+            {% endif %}
+        </div>
+        {% else %}
+        <!-- Buyer Section -->
+        <div class="buy-section">
+            <h3>Interested in this item?</h3>
+            {% if item.price != 0 %}
+                {% if wallet_public_key %}
+                    <p>Click below to purchase this item.</p>
+                    <button class="buy-button" onclick="purchaseItem()">
+                    🛒 Buy Now
+                    </button>
+                {% else %}
+                    <p>Connect your wallet to purchase this item.</p>
+                {% endif %}
+            {% endif %}
+        </div>
     {% endif %}
 
     <h3>Journey History:</h3>
@@ -117,7 +235,7 @@ p.description { text-align: center; color: #555; margin-bottom: 10px; }
     </ul>
 
     <div class="user-points">
-        <h3>All Users’ Points for this Item:</h3>
+        <h3>All Users' Points for this Item:</h3>
         <ul>
             {% for user_wallet, points in user_points %}
                 <li>{{ user_wallet }}: {{ points }} point{{ 's' if points != 1 else '' }}</li>
@@ -127,6 +245,16 @@ p.description { text-align: center; color: #555; margin-bottom: 10px; }
 </div>
 
 <script>
+function showAlert(message, isError = false) {
+    const container = document.getElementById('alertContainer');
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert ${isError ? 'alert-error' : 'alert-success'}`;
+    alertDiv.innerText = message;
+    container.innerHTML = '';
+    container.appendChild(alertDiv);
+    setTimeout(() => alertDiv.remove(), 5000);
+}
+
 async function addJourney() {
     const event = document.getElementById('journeyEvent').value;
     const wallet = "{{ wallet_public_key }}";
@@ -140,9 +268,9 @@ async function addJourney() {
 
     const result = await resp.json();
     if(result.error) {
-        alert(result.error);
+        showAlert(result.error, true);
     } else {
-        alert(result.message);
+        showAlert(result.message, false);
 
         // Update user's points for this item
         document.getElementById('points').innerText = result.loyalty_points;
@@ -153,6 +281,41 @@ async function addJourney() {
         li.innerText = `${event.replace('_', ' ').toUpperCase()} - ${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()} ${now.getHours()}:${now.getMinutes()} (${wallet})`;
         const list = document.getElementById('stampList');
         list.prepend(li);
+    }
+}
+
+async function purchaseItem() {
+    const wallet = "{{ wallet_public_key }}";
+    const itemMint = "{{ item.solanaMint }}";
+    const buyButton = event.target;
+    
+    buyButton.disabled = true;
+    buyButton.innerText = "Processing...";
+
+    try {
+        const resp = await fetch("/purchase_item", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ wallet, item_mint: itemMint })
+        });
+
+        const result = await resp.json();
+        
+        if(result.error) {
+            showAlert(result.error, true);
+            buyButton.disabled = false;
+            buyButton.innerText = "🛒 Buy Now";
+        } else {
+            showAlert(result.message, false);
+            // Optionally reload the page or redirect after successful purchase
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
+        }
+    } catch (err) {
+        showAlert("An error occurred during purchase: " + err.message, true);
+        buyButton.disabled = false;
+        buyButton.innerText = "🛒 Buy Now";
     }
 }
 </script>

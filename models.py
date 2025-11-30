@@ -10,11 +10,13 @@ class Item(db.Model):
     solanaMint = db.Column(db.String(44), primary_key=True)
     ownerPublicKey = db.Column(db.String(44))
     name = db.Column(db.String(30))
-    description = db.Column(db.String(100))
     image_filename = db.Column(db.String(255))
     image_MIME = db.Column(db.Text)
     image_data = db.Column(db.LargeBinary)
+    description = db.Column(db.String(100))
     brand = db.Column(db.String(50))
+    price = db.Column(db.Float)
+
 
 class User(db.Model):
     __tablename__ = "users"

@@ -91,11 +91,12 @@ def setup_routes(app: Flask):
 
         # POST: form data
         name = request.form.get("name")
-        description = request.form.get("description")
-        brand = request.form.get("brand")
         image_file = request.files.get("image")
         image_filename = None
         image_MIME = None
+        description = request.form.get("description")
+        brand = request.form.get("brand")
+        price = request.form.get("price")
 
         # Validation
         if not name:
@@ -141,11 +142,12 @@ def setup_routes(app: Flask):
                 solanaMint=mint_address,
                 ownerPublicKey=wallet_pk,
                 name=name,
-                description=description,
                 image_filename=image_filename,
                 image_MIME = image_MIME,
                 image_data = image_file.read(),
-                brand=brand
+                description=description,
+                brand=brand,
+                price=price
             )
             db.session.add(new_item)
             db.session.commit()
@@ -237,7 +239,6 @@ def setup_routes(app: Flask):
 
         item.image_data_base64 = base64.b64encode(item.image_data).decode('utf-8')
 
-
         return render_template(
             "item.html",
             item=item,
@@ -245,7 +246,8 @@ def setup_routes(app: Flask):
             wallet_public_key=wallet_pk,
             item_points=item_points,
             journey_events=JOURNEY_EVENTS,
-            user_points=user_points
+            user_points=user_points,
+            is_owner=item.ownerPublicKey == wallet_pk
         )
 
 

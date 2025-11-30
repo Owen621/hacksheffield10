@@ -42,7 +42,9 @@
 }
 
 .form-group input[type="text"],
-.form-group textarea {
+.form-group input[type="number"],
+.form-group textarea,
+.form-group select {
     width: 100%;
     padding: 14px 18px;
     border: 2px solid #e9ecef;
@@ -51,10 +53,13 @@
     font-family: inherit;
     transition: all 0.3s ease;
     background: #f8f9fa;
+    box-sizing: border-box;
 }
 
 .form-group input[type="text"]:focus,
-.form-group textarea:focus {
+.form-group input[type="number"]:focus,
+.form-group textarea:focus,
+.form-group select:focus {
     outline: none;
     border-color: #667eea;
     background: white;
@@ -66,6 +71,75 @@ textarea {
     resize: vertical;
     min-height: 120px;
     line-height: 1.6;
+}
+
+/* Pricing section styles */
+.pricing-section {
+    background: linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%);
+    border: 2px solid #e8ebff;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 30px;
+}
+
+.pricing-section h3 {
+    margin-top: 0;
+    color: #667eea;
+    font-size: 1.2rem;
+    margin-bottom: 15px;
+}
+
+.pricing-toggle {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+    gap: 12px;
+}
+
+.pricing-toggle input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: #667eea;
+}
+
+.pricing-toggle label {
+    cursor: pointer;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 0;
+}
+
+.price-input-group {
+    display: none;
+    animation: slideDown 0.3s ease;
+}
+
+.price-input-group.active {
+    display: block;
+}
+
+.price-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.price-input-wrapper input[type="number"] {
+    flex: 1;
+}
+
+.price-currency {
+    font-weight: 600;
+    color: #667eea;
+    min-width: 50px;
+}
+
+.price-hint {
+    font-size: 0.9rem;
+    color: #6c757d;
+    margin-top: 8px;
+    font-style: italic;
 }
 
 /* Image upload styles */
@@ -196,9 +270,16 @@ textarea {
     to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
 @media (max-width: 768px) {
     .form-container { padding: 25px; }
     .page-header h2 { font-size: 2rem; }
+    .price-input-wrapper { flex-direction: column; align-items: flex-start; }
+    .price-input-wrapper input[type="number"] { width: 100%; }
 }
 </style>
 
@@ -228,6 +309,29 @@ textarea {
                 </select>
             </div>
 
+            <!-- Pricing Section -->
+            <div class="pricing-section">
+                <h3>💰 List for Sale</h3>
+                <div class="pricing-toggle">
+                    <input type="checkbox" id="forSaleCheckbox" name="for_sale">
+                    <label for="forSaleCheckbox">I want to sell this item</label>
+                </div>
+                <div class="price-input-group" id="priceInputGroup">
+                    <div class="price-input-wrapper">
+                        <input 
+                            type="number" 
+                            id="priceInput" 
+                            name="price" 
+                            placeholder="Enter price" 
+                            step="0.01" 
+                            min="0"
+                        >
+                        <span class="price-currency">◎ SOL</span>
+                    </div>
+                    <p class="price-hint">Leave blank or enter 0 if you don't want to sell it right now</p>
+                </div>
+            </div>
+
             <div class="form-group">
                 <div class="image-upload-area" id="uploadArea">
                     <div class="upload-icon">📸</div>
@@ -247,6 +351,20 @@ textarea {
     </div>
 
     <script>
+    const forSaleCheckbox = document.getElementById('forSaleCheckbox');
+    const priceInputGroup = document.getElementById('priceInputGroup');
+    const priceInput = document.getElementById('priceInput');
+
+    // Toggle price input visibility
+    forSaleCheckbox.addEventListener('change', () => {
+        if (forSaleCheckbox.checked) {
+            priceInputGroup.classList.add('active');
+        } else {
+            priceInputGroup.classList.remove('active');
+            priceInput.value = '';
+        }
+    });
+
     const uploadArea = document.getElementById('uploadArea');
     const fileInput = document.getElementById('image');
     const imagePreview = document.getElementById('imagePreview');
@@ -298,6 +416,11 @@ textarea {
 
         const formData = new FormData(e.target);
         formData.append('wallet', wallet);
+
+        // Handle price: if for_sale is checked and price is set, include it; otherwise set to 0
+        if (!forSaleCheckbox.checked || !priceInput.value) {
+            formData.set('price', '0');
+        }
 
         const resp = await fetch("/add", { method: "POST", body: formData });
         const result = await resp.json();
