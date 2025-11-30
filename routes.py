@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, session, render_template, redirect, url_for, g
+from flask import Flask, request, jsonify, session, render_template, redirect, g
 import subprocess
 import json
 import os
@@ -15,13 +15,16 @@ BRANDS = [
     "Gucci",
     "North Face"
 ]
+
 UPLOAD_FOLDER = 'backend/static/uploads'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+
 JOURNEY_EVENTS = [
     "worn",
     "washed",
     "repaired",
-    "resold",
+    "bought",
+    "sold",
     "store_visit",
     "brand_drop",
     "limited_time",
@@ -32,10 +35,10 @@ JOURNEY_EVENTS = [
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+
 def setup_routes(app: Flask):
     app.secret_key = "dev_secret_key"
     app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-
 
     @app.before_request
     def load_user_points():
@@ -45,11 +48,9 @@ def setup_routes(app: Flask):
         if wallet_pk:
             g.total_points = JourneyStamp.query.filter_by(user_wallet=wallet_pk).count()
 
-    
     # ---------------------------------------------------------
     # Home
     # ---------------------------------------------------------
-
     @app.route("/")
     def home():
         wallet_pk = session.get("wallet_public_key")
@@ -72,7 +73,6 @@ def setup_routes(app: Flask):
         session.pop("wallet_public_key", None)
         return jsonify({"status": "ok"})
 
-
     # ---------------------------------------------------------
     # Add item
     # ---------------------------------------------------------
@@ -85,40 +85,26 @@ def setup_routes(app: Flask):
             return jsonify({"error": "Connect your wallet"}), 400
 
         if request.method == "GET":
-            # Pass brands list to template for dropdown
             return render_template("add_item.html", wallet_public_key=wallet_pk, brands=BRANDS)
 
-        # POST: form data
         name = request.form.get("name")
         image_file = request.files.get("image")
         image_filename = None
         image_MIME = None
         description = request.form.get("description")
         brand = request.form.get("brand")
-        price = request.form.get("price")
+        price = request.form.get("price", type=float)
 
-        # Validation
         if not name:
             return jsonify({"error": "Missing name"}), 400
         if not brand or brand not in BRANDS:
             return jsonify({"error": "Invalid or missing brand"}), 400
 
-        # Save image if provided
-        #if image_file and allowed_file(image_file.filename):
-            #filename = f"{wallet_pk}_{secure_filename(image_file.filename)}"
-            #os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-            #file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            #image_file.save(file_path)
-            #image_filename = filename
-        
         if image_file and allowed_file(image_file.filename):
             image_MIME = secure_filename(image_file.filename)
             image_filename = f"{wallet_pk}_{image_MIME}"
-        
 
-
-
-        # Mint NFT via Node script (add brand argument if needed)
+        # Mint NFT via Node script
         try:
             result = subprocess.run(
                 ["node", "static/js/mint_nft.js", wallet_pk, name, description, brand],
@@ -133,7 +119,6 @@ def setup_routes(app: Flask):
         except Exception as e:
             print("Minting failed:", e)
             return jsonify({"success": False, "error": "Minting NFT failed"}), 500
-            
 
         # Save to DB
         try:
@@ -142,8 +127,8 @@ def setup_routes(app: Flask):
                 ownerPublicKey=wallet_pk,
                 name=name,
                 image_filename=image_filename,
-                image_MIME = image_MIME,
-                image_data = image_file.read(),
+                image_MIME=image_MIME,
+                image_data=image_file.read() if image_file else None,
                 description=description,
                 brand=brand,
                 price=price
@@ -157,7 +142,9 @@ def setup_routes(app: Flask):
 
         return jsonify({"success": True, "solana_mint": mint_address})
 
-
+    # ---------------------------------------------------------
+    # View Items
+    # ---------------------------------------------------------
     @app.route("/my_items")
     def my_items():
         wallet_pk = session.get("wallet_public_key")
@@ -165,68 +152,44 @@ def setup_routes(app: Flask):
             return redirect("/")
 
         items = Item.query.filter_by(ownerPublicKey=wallet_pk).all()
-
-        # Add total points for each item
         for item in items:
             item.total_points = JourneyStamp.query.filter_by(item_mint=item.solanaMint).count()
-            item.image_data_base64 = base64.b64encode(item.image_data).decode('utf-8')
+            item.image_data_base64 = base64.b64encode(item.image_data).decode('utf-8') if item.image_data else None
 
         return render_template(
             "my_items.html",
             items=items,
             wallet_public_key=wallet_pk,
             total_items=len(items),
-            limit=6  # default pagination limit
+            limit=6
         )
 
-
-
-    # All Items
-    # ---------------------------------------------------------
     @app.route("/all_items")
     def all_items():
         wallet_pk = session.get("wallet_public_key")
         items = Item.query.all()
-
-        # Compute total points per item by counting related JourneyStamps
         for item in items:
             item.total_points = JourneyStamp.query.filter_by(item_mint=item.solanaMint).count()
-            item.image_data_base64 = base64.b64encode(item.image_data).decode('utf-8')
-
+            item.image_data_base64 = base64.b64encode(item.image_data).decode('utf-8') if item.image_data else None
 
         return render_template(
             "all_items.html",
             items=items,
             wallet_public_key=wallet_pk,
             total_items=len(items),
-            limit=6  # default pagination limit
+            limit=6
         )
-
-
-
-    # ---------------------------------------------------------
-    # View single item
-    # ---------------------------------------------------------
-
 
     @app.route("/item/<mint_address>")
     def item_page(mint_address):
         wallet_pk = session.get("wallet_public_key")
-
-        # Get item
         item = Item.query.get(mint_address)
         if not item:
             return "Item not found", 404
 
-        # All journey stamps for this item
         stamps = JourneyStamp.query.filter_by(item_mint=mint_address).order_by(JourneyStamp.timestamp.desc()).all()
+        item_points = JourneyStamp.query.filter_by(item_mint=mint_address, user_wallet=wallet_pk).count() if wallet_pk else 0
 
-        # Loyalty points for the connected user (specific to this item)
-        item_points = 0
-        if wallet_pk:
-            item_points = JourneyStamp.query.filter_by(item_mint=mint_address, user_wallet=wallet_pk).count()
-
-        # Aggregate loyalty points for all users on this item
         from sqlalchemy import func
         user_points = (
             JourneyStamp.query
@@ -236,7 +199,7 @@ def setup_routes(app: Flask):
             .all()
         )
 
-        item.image_data_base64 = base64.b64encode(item.image_data).decode('utf-8')
+        item.image_data_base64 = base64.b64encode(item.image_data).decode('utf-8') if item.image_data else None
 
         return render_template(
             "item.html",
@@ -249,63 +212,47 @@ def setup_routes(app: Flask):
             is_owner=item.ownerPublicKey == wallet_pk
         )
 
-
+    # ---------------------------------------------------------
+    # Add Journey Stamp
+    # ---------------------------------------------------------
     @app.route("/add_stamp", methods=["POST"])
     def add_stamp():
         data = request.json
-        wallet = data.get("wallet")  # Phantom public key
+        wallet = data.get("wallet")
         item_mint = data.get("item_mint")
         event = data.get("event")
 
         if event not in JOURNEY_EVENTS:
             return jsonify({"error": "Invalid event"}), 400
 
-        # Ensure user exists
         user = User.query.get(wallet)
         if not user:
             user = User(wallet=wallet, loyalty_points=0)
             db.session.add(user)
 
-        # Ensure item exists
         item = Item.query.get(item_mint)
         if not item:
             return jsonify({"error": "Item not found"}), 404
 
-        # Add journey stamp
         stamp = JourneyStamp(item_mint=item_mint, user_wallet=wallet, event=event)
         db.session.add(stamp)
 
-        # Increment loyalty points (1 per stamp)
         user.loyalty_points += 1
 
-        # Commit DB changes first
         try:
             db.session.commit()
         except Exception as e:
             db.session.rollback()
             return jsonify({"success": False, "error": f"Database error: {str(e)}"}), 500
 
-        # Transfer 1 loyalty token on-chain
-        try:
-            result = subprocess.run(
-                ["node", "static/js/transfer_loyalty_token.js", wallet],
-                capture_output=True,
-                text=True,
-                check=True
-            )
-
-            transfer_output = result.stdout
-            transfer_data = json.loads(transfer_output)
-            if not transfer_data.get("success"):
-                print("On-chain loyalty transfer failed:", transfer_data.get("error"))
-        except Exception as e:
-            print("On-chain loyalty transfer failed:", e)
-
         return jsonify({
             "message": f"Journey stamp '{event}' added!",
             "loyalty_points": user.loyalty_points
         })
-    
+
+    # ---------------------------------------------------------
+    # Update Item
+    # ---------------------------------------------------------
     @app.route("/update_item", methods=["POST"])
     def update_item():
         item_mint = request.form.get('item_mint')
@@ -315,41 +262,67 @@ def setup_routes(app: Flask):
         item = Item.query.filter_by(solanaMint=item_mint).first()
         if not item:
             return jsonify({"error": "Item not found"}), 404
-        
+
         item.description = description
         item.price = price
-
         db.session.commit()
         return jsonify({"status": "success", "message": "Item Modified"})
 
+    # ---------------------------------------------------------
+    # Purchase Item (adds bought/sold journeys)
+    # ---------------------------------------------------------
     @app.route("/purchase_item", methods=["POST"])
     def purchase_item():
         data = request.json
-        wallet = data.get('wallet')
+        buyer_wallet = data.get('wallet')
         item_mint = data.get('item_mint')
 
         item = Item.query.filter_by(solanaMint=item_mint).first()
         if not item:
             return jsonify({"error": "Item not found"}), 404
-        
-        item.ownerPublicKey = wallet
+
+        seller_wallet = item.ownerPublicKey
+
+        # Transfer ownership
+        item.ownerPublicKey = buyer_wallet
         item.price = 0
 
-        db.session.commit()
-        return jsonify({"status": "success", "message": "Item purchased"})
-    
+        # Ensure buyer exists
+        buyer = User.query.get(buyer_wallet)
+        if not buyer:
+            buyer = User(wallet=buyer_wallet, loyalty_points=0)
+            db.session.add(buyer)
+        buyer.loyalty_points += 1
 
-        # ---------------------------------------------------------
+        # Ensure seller exists
+        seller = User.query.get(seller_wallet)
+        if not seller:
+            seller = User(wallet=seller_wallet, loyalty_points=0)
+            db.session.add(seller)
+        seller.loyalty_points += 1
+
+        # Add Journey Stamps
+        buy_stamp = JourneyStamp(item_mint=item_mint, user_wallet=buyer_wallet, event="bought")
+        sell_stamp = JourneyStamp(item_mint=item_mint, user_wallet=seller_wallet, event="sold")
+        db.session.add(buy_stamp)
+        db.session.add(sell_stamp)
+
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({"success": False, "error": f"Database error: {str(e)}"}), 500
+
+        return jsonify({"status": "success", "message": "Item purchased and journey stamps added"})
+
+    # ---------------------------------------------------------
     # Leaderboard
     # ---------------------------------------------------------
     @app.route("/leaderboard")
     def leaderboard():
         wallet_pk = session.get("wallet_public_key")
-
-        # Query top users by loyalty points, descending order
         from sqlalchemy import desc
-        top_users = User.query.order_by(desc(User.loyalty_points)).limit(20).all()  # top 20
-
+        top_users = User.query.order_by(desc(User.loyalty_points)).limit(20).all()
         return render_template(
             "leaderboard.html",
             users=top_users,
