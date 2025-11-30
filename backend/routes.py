@@ -44,7 +44,6 @@ def setup_routes(app: Flask):
         if wallet_pk:
             g.total_points = JourneyStamp.query.filter_by(user_wallet=wallet_pk).count()
 
-
     
     # ---------------------------------------------------------
     # Home
@@ -231,8 +230,6 @@ def setup_routes(app: Flask):
         )
 
 
-
-
     @app.route("/add_stamp", methods=["POST"])
     def add_stamp():
         data = request.json
@@ -287,3 +284,21 @@ def setup_routes(app: Flask):
             "message": f"Journey stamp '{event}' added!",
             "loyalty_points": user.loyalty_points
         })
+    
+
+        # ---------------------------------------------------------
+    # Leaderboard
+    # ---------------------------------------------------------
+    @app.route("/leaderboard")
+    def leaderboard():
+        wallet_pk = session.get("wallet_public_key")
+
+        # Query top users by loyalty points, descending order
+        from sqlalchemy import desc
+        top_users = User.query.order_by(desc(User.loyalty_points)).limit(20).all()  # top 20
+
+        return render_template(
+            "leaderboard.html",
+            users=top_users,
+            wallet_public_key=wallet_pk
+        )

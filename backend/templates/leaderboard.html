@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Leaderboard{% endblock %}
+
+{% block content %}
+<h1>Leaderboard</h1>
+<table>
+    <thead>
+        <tr>
+            <th>Rank</th>
+            <th>Wallet</th>
+            <th>Loyalty Points</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for user in users %}
+        <tr {% if user.wallet == wallet_public_key %} style="font-weight:bold;" {% endif %}>
+            <td>{{ loop.index }}</td>  {# loop.index starts at 1 #}
+            <td>{{ user.wallet }}</td>
+            <td>{{ user.loyalty_points }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
