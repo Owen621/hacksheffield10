@@ -2,9 +2,10 @@ from flask import Flask, request, jsonify, session, render_template, redirect, u
 import subprocess
 import json
 import os
+import base64
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
-from backend.models import db, Item, User, JourneyStamp
+from models import db, Item, User, JourneyStamp
 
 load_dotenv()
 
@@ -89,10 +90,12 @@ def setup_routes(app: Flask):
 
         # POST: form data
         name = request.form.get("name")
-        description = request.form.get("description")
-        brand = request.form.get("brand")
         image_file = request.files.get("image")
         image_filename = None
+        image_MIME = None
+        description = request.form.get("description")
+        brand = request.form.get("brand")
+        price = request.form.get("price")
 
         # Validation
         if not name:
@@ -101,17 +104,24 @@ def setup_routes(app: Flask):
             return jsonify({"error": "Invalid or missing brand"}), 400
 
         # Save image if provided
+        #if image_file and allowed_file(image_file.filename):
+            #filename = f"{wallet_pk}_{secure_filename(image_file.filename)}"
+            #os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+            #file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            #image_file.save(file_path)
+            #image_filename = filename
+        
         if image_file and allowed_file(image_file.filename):
-            filename = f"{wallet_pk}_{secure_filename(image_file.filename)}"
-            os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            image_file.save(file_path)
-            image_filename = filename
+            image_MIME = secure_filename(image_file.filename)
+            image_filename = f"{wallet_pk}_{image_MIME}"
+        
+
+
 
         # Mint NFT via Node script (add brand argument if needed)
         try:
             result = subprocess.run(
-                ["node", "backend/mint_nft.js", wallet_pk, name, description, brand],
+                ["node", "static/js/mint_nft.js", wallet_pk, name, description, brand],
                 capture_output=True,
                 text=True,
                 check=True
@@ -123,6 +133,7 @@ def setup_routes(app: Flask):
         except Exception as e:
             print("Minting failed:", e)
             return jsonify({"success": False, "error": "Minting NFT failed"}), 500
+            
 
         # Save to DB
         try:
@@ -130,9 +141,12 @@ def setup_routes(app: Flask):
                 solanaMint=mint_address,
                 ownerPublicKey=wallet_pk,
                 name=name,
-                description=description,
                 image_filename=image_filename,
-                brand=brand  # store brand in DB
+                image_MIME = image_MIME,
+                image_data = image_file.read(),
+                description=description,
+                brand=brand,
+                price=price
             )
             db.session.add(new_item)
             db.session.commit()
@@ -155,6 +169,7 @@ def setup_routes(app: Flask):
         # Add total points for each item
         for item in items:
             item.total_points = JourneyStamp.query.filter_by(item_mint=item.solanaMint).count()
+            item.image_data_base64 = base64.b64encode(item.image_data).decode('utf-8')
 
         return render_template(
             "my_items.html",
@@ -176,6 +191,8 @@ def setup_routes(app: Flask):
         # Compute total points per item by counting related JourneyStamps
         for item in items:
             item.total_points = JourneyStamp.query.filter_by(item_mint=item.solanaMint).count()
+            item.image_data_base64 = base64.b64encode(item.image_data).decode('utf-8')
+
 
         return render_template(
             "all_items.html",
@@ -219,6 +236,8 @@ def setup_routes(app: Flask):
             .all()
         )
 
+        item.image_data_base64 = base64.b64encode(item.image_data).decode('utf-8')
+
         return render_template(
             "item.html",
             item=item,
@@ -226,7 +245,8 @@ def setup_routes(app: Flask):
             wallet_public_key=wallet_pk,
             item_points=item_points,
             journey_events=JOURNEY_EVENTS,
-            user_points=user_points
+            user_points=user_points,
+            is_owner=item.ownerPublicKey == wallet_pk
         )
 
 

@@ -287,7 +287,7 @@
       <div class="item-card">
         <div class="item-image">
           {% if item.image_filename %}
-            <img src="{{ url_for('static', filename='uploads/' ~ item.image_filename) }}" alt="{{ item.name }}">
+            <img decoding="async" src="data:image/{{ item.image_MIME }};base64,{{ item.image_data_base64 }}" alt="{{ item.image_filename }}">
           {% else %}
             <span class="no-image">🖼️</span>
           {% endif %}

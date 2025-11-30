@@ -1,17 +1,21 @@
 from flask_sqlalchemy import SQLAlchemy  # type: ignore
+import uuid
+
 
 db = SQLAlchemy()
 
 class Item(db.Model):
-    __tablename__ = 'items'
+    __tablename__ = "items"
 
     solanaMint = db.Column(db.String(44), primary_key=True)
     ownerPublicKey = db.Column(db.String(44))
     name = db.Column(db.String(30))
-    description = db.Column(db.String(100))
     image_filename = db.Column(db.String(255))
-    brand = db.Column(db.String(50))  # store brand name directly
-
+    image_MIME = db.Column(db.Text)
+    image_data = db.Column(db.LargeBinary)
+    description = db.Column(db.String(100))
+    brand = db.Column(db.String(50))
+    price = db.Column(db.Float)
 
 
 class User(db.Model):

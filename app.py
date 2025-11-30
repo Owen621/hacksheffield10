@@ -1,14 +1,14 @@
 from flask import Flask # type: ignore
-from backend.routes import setup_routes
+from routes import setup_routes
 from dotenv import load_dotenv
-from backend.models import db
+from models import db
 
 load_dotenv()  
 
 app = Flask(
     __name__,
-    template_folder="backend/templates",
-    static_folder="backend/static"
+    template_folder="templates",
+    static_folder="static"
 )
 app.secret_key = "dev_secret_key"
 
