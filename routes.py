@@ -244,6 +244,21 @@ def setup_routes(app: Flask):
         except Exception as e:
             db.session.rollback()
             return jsonify({"success": False, "error": f"Database error: {str(e)}"}), 500
+        
+                # Transfer 1 loyalty token on-chain
+        try:
+            result = subprocess.run(
+                ["node", "static/js/transfer_loyalty_token.js", wallet],
+                capture_output=True,
+                text=True,
+                check=True
+            )
+            transfer_output = result.stdout
+            transfer_data = json.loads(transfer_output)
+            if not transfer_data.get("success"):
+                print("On-chain loyalty transfer failed:", transfer_data.get("error"))
+        except Exception as e:
+            print("On-chain loyalty transfer failed:", e)
 
         return jsonify({
             "message": f"Journey stamp '{event}' added!",
@@ -269,7 +284,7 @@ def setup_routes(app: Flask):
         return jsonify({"status": "success", "message": "Item Modified"})
 
     # ---------------------------------------------------------
-    # Purchase Item (adds bought/sold journeys)
+    # Purchase Item (adds bought/sold journeys + on-chain loyalty)
     # ---------------------------------------------------------
     @app.route("/purchase_item", methods=["POST"])
     def purchase_item():
@@ -313,7 +328,40 @@ def setup_routes(app: Flask):
             db.session.rollback()
             return jsonify({"success": False, "error": f"Database error: {str(e)}"}), 500
 
-        return jsonify({"status": "success", "message": "Item purchased and journey stamps added"})
+        # -----------------------------------------------------
+        # On-chain loyalty token transfer for buyer
+        # -----------------------------------------------------
+        try:
+            result = subprocess.run(
+                ["node", "static/js/transfer_loyalty_token.js", buyer_wallet],
+                capture_output=True,
+                text=True,
+                check=True
+            )
+            transfer_data = json.loads(result.stdout)
+            if not transfer_data.get("success"):
+                print("Buyer on-chain loyalty transfer failed:", transfer_data.get("error"))
+        except Exception as e:
+            print("Buyer on-chain loyalty transfer failed:", e)
+
+        # -----------------------------------------------------
+        # On-chain loyalty token transfer for seller
+        # -----------------------------------------------------
+        try:
+            result = subprocess.run(
+                ["node", "static/js/transfer_loyalty_token.js", seller_wallet],
+                capture_output=True,
+                text=True,
+                check=True
+            )
+            transfer_data = json.loads(result.stdout)
+            if not transfer_data.get("success"):
+                print("Seller on-chain loyalty transfer failed:", transfer_data.get("error"))
+        except Exception as e:
+            print("Seller on-chain loyalty transfer failed:", e)
+
+        return jsonify({"status": "success", "message": "Item purchased, journey stamps added, and loyalty tokens transferred on-chain"})
+
 
     # ---------------------------------------------------------
     # Leaderboard
