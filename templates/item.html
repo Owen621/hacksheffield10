@@ -22,6 +22,12 @@
     margin: 0 auto 20px auto;
 }
 
+.item-image img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+}
+
 h2 { text-align: center; font-size: 2rem; margin-bottom: 10px; }
 p.description { text-align: center; color: #555; margin-bottom: 10px; }
 .loyalty-points { text-align: center; font-weight: 600; margin-bottom: 20px; }
@@ -83,8 +89,9 @@ p.description { text-align: center; color: #555; margin-bottom: 10px; }
 </style>
 
 <div class="item-container">
-    <img src="{{ url_for('static', filename='uploads/' + item.image_filename) }}" alt="{{ item.name }}" class="item-image">
-
+    <div class="item-image">
+        <img decoding="async" src="data:image/{{ item.image_MIME }};base64,{{ item.image_data_base64 }}" alt="{{ item.image_filename }}">
+    </div>
     <h2>{{ item.name }} ({{ item.brand }})</h2>
     <p class="description">{{ item.description }}</p>
     {% if wallet_public_key %}
