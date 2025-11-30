@@ -1,17 +1,5 @@
 from flask import Flask # type: ignore
 from backend.routes import setup_routes
-<<<<<<< HEAD
-from backend.models import db
-
-app = Flask(__name__)
-
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///restyle.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-db.init_app(app)
-with app.app_context():
-    db.create_all()
-
-=======
 from dotenv import load_dotenv
 from backend.models import db
 
@@ -30,7 +18,6 @@ db.init_app(app)
 with app.app_context():
     db.create_all()
 
->>>>>>> owen
 setup_routes(app)
 
 if __name__ == "__main__":
